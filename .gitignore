@@ -1,0 +1,13 @@
+# devenv
+.devenv*
+devenv.local.nix
+.direnv
+.pre-commit-config.yaml
+
+# python stuff
+__pycache__
+.uv-cache
+
+# other 
+data
+.env
