@@ -4,17 +4,20 @@ a microservice designed for use inside the arian ecosystem, but can be repurpose
 
 ## api reference
 
-### parse receipt
-
-**endpoint**: `POST /parse`
-
+### `POST /parse`
 Parses a receipt image and returns structured data.
 
-**request**:
-- content-Type: `multipart/form-data`
+#### request:
+
+- content-type: `multipart/form-data`
 - body: `file` - image file of a receipt (JPEG or PNG)
 
-**response**:
+```shell
+curl -X POST http://localhost:8000/parse -F "file=@image.jpg;type=image/jpeg" | jq .
+```
+
+#### response:
+
 ```json
 {
   "merchant": "STORE NAME",
@@ -30,11 +33,9 @@ Parses a receipt image and returns structured data.
 }
 ```
 
-### health
+### `GET /health`
 
-**endpoint**:  GET /health
-
-**response**:
+#### response:
 
 ```json
 {
@@ -51,6 +52,7 @@ there are 2 existing providers (can be easily extended):
 2. local: a proof-of-concept implementation using local ocr and a small llm. uses tesseract for text extraction and phi-3-mini for parsing. the local implementation is experimental and not ready for actual use. but hey, it's private! dig thru the code if you want to see how to properly configure and use it.
 
 ## arian ecosystem
+
 - [arian](https://github.com/xhos/arian): web dashboard
 - [ariand](https://github.com/xhos/ariand): backend service
 - [arian-parser](https://github.com/xhos/arian-parser): transaction email parser
