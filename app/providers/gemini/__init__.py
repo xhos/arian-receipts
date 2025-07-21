@@ -39,7 +39,7 @@ def parse_receipt(image_bytes):
 	)
 
 	response = _client.models.generate_content(
-		model="gemini-1.5-flash",
+		model="gemini-2.5-flash",
 		contents=[_img_part(image_bytes), {"text": prompt}],
 		config=types.GenerateContentConfig(response_mime_type="application/json"),
 	)
@@ -49,6 +49,10 @@ def parse_receipt(image_bytes):
 	except json.JSONDecodeError:
 		log.error("Gemini did not return valid JSON: %s", response.text[:200])
 		raise ValueError("Gemini response was not valid JSON")
+
+	# clean up empty items (stamps, points, etc)
+	if "items" in data and isinstance(data["items"], list):
+		data["items"] = [item for item in data["items"] if item.get("price") != 0]
 
 	Receipt(**data)
 	return data

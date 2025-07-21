@@ -52,5 +52,9 @@ def parse_receipt(image_bytes):
 	raw = res["choices"][0]["message"]["content"].strip()
 	data = json.loads(raw)
 
+	# clean up empty items (stamps, points, etc)
+	if "items" in data and isinstance(data["items"], list):
+		data["items"] = [item for item in data["items"] if item.get("price") != 0]
+
 	Receipt(**data)
 	return data
