@@ -1,13 +1,15 @@
-class Item:
-	def __init__(self, name, price, qty):
-		self.name = name
-		self.price = price
-		self.qty = qty
+from typing import Optional, List
+from pydantic import BaseModel
 
 
-class Receipt:
-	def __init__(self, merchant, date, total, items):
-		self.merchant = merchant
-		self.date = date
-		self.total = total
-		self.items = items
+class Item(BaseModel):
+	name: str
+	price: float
+	qty: float
+
+
+class Receipt(BaseModel):
+	merchant: Optional[str] = None
+	date: Optional[str] = None
+	total: Optional[float] = None
+	items: Optional[List[Item]] = None

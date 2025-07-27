@@ -15,9 +15,19 @@ _client: genai.Client | None = None
 
 
 def init_provider() -> None:
+	"""
+	Attempts to initialize the Gemini client.
+	If it fails, it logs a warning and leaves the client as None.
+	"""
 	global _client
-	_client = genai.Client()
-	log.info("Gemini provider initialised")
+	try:
+		_client = genai.Client()
+		log.info("Gemini provider was configured successfully.")
+	except Exception as e:
+		log.warning(
+			f"Could not initialize Gemini provider: {e}. It will be unavailable."
+		)
+		_client = None
 
 
 def _img_part(blob: bytes, mime: str = "image/jpeg") -> dict[str, Any]:
@@ -39,8 +49,15 @@ PROMPT = (
 
 
 def parse_receipt(image_bytes: bytes) -> dict[str, Any]:
+	"""
+	Parses a receipt using the Gemini provider.
+	Raises RuntimeError if the provider is not initialized.
+	"""
 	if _client is None:
-		raise RuntimeError("Gemini provider not initialised; call init_provider()")
+		raise RuntimeError(
+			"Gemini provider is not configured. "
+			"Ensure your API key (e.g., GOOGLE_API_KEY) is set correctly."
+		)
 
 	with tracer.start_as_current_span("gemini.parse_receipt") as span:
 		span.set_attribute("llm.model", "gemini-2.5-flash")

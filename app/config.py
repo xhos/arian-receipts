@@ -22,6 +22,7 @@ def _env(name: str, default: Any, cast: Callable[[str], Any]):
 SERVICE = _env("SERVICE_NAME", "arian-receipts", str)
 LOG_LEVEL = _env("LOG_LEVEL", "INFO", str).upper()
 LOG_FORMAT = _env("LOG_FORMAT", "json", str).lower()  # json | text
+LOCAL_PROVIDER_ENABLED = _env("LOCAL_PROVIDER_ENABLED", False, lambda s: s == "true")
 
 
 class LokiJSONFormatter(jsonlogger.JsonFormatter):

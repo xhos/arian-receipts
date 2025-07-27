@@ -5,9 +5,10 @@ a microservice designed for use inside the arian ecosystem, but can be repurpose
 ## api reference
 
 ### `POST /parse`
+
 Parses a receipt image and returns structured data.
 
-#### request:
+#### request
 
 - content-type: `multipart/form-data`
 - body: `file` - image file of a receipt (JPEG or PNG)
@@ -16,7 +17,7 @@ Parses a receipt image and returns structured data.
 curl -X POST http://localhost:8000/parse -F "file=@image.jpg;type=image/jpeg" | jq .
 ```
 
-#### response:
+#### response
 
 ```json
 {
@@ -35,7 +36,7 @@ curl -X POST http://localhost:8000/parse -F "file=@image.jpg;type=image/jpeg" | 
 
 ### `GET /health`
 
-#### response:
+#### response
 
 ```json
 {
