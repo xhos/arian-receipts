@@ -8,12 +8,12 @@ import numpy as np
 import pytesseract
 from PIL import Image
 
+log = logging.getLogger(__name__)
+
 DEBUG = False
 OCR_DEBUG_DIR = "./ocr_debug"
 if DEBUG:
 	os.makedirs(OCR_DEBUG_DIR, exist_ok=True)
-
-log = logging.getLogger(__name__)
 
 MAX_EDGE = 2500
 CLAHE_CLIP = 2.0
@@ -32,7 +32,7 @@ def _debug_save(img, step):
 	filename = f"{step.replace(' ', '_')}.png"
 	path = os.path.join(OCR_DEBUG_DIR, filename)
 	cv2.imwrite(path, img)
-	log.info("Wrote debug image: %s", path)
+	log.info("wrote debug image: %s", path)
 
 
 def _order_pts(pts):
@@ -86,11 +86,9 @@ def _smart_deskew(gray):
 		return gray
 
 	angle = cv2.minAreaRect(coords)[-1]
-	# convert angle into range [-90,90)
 	if angle < -45:
 		angle += 90
 
-	# only deskew if within tolerance
 	if abs(angle) <= DESKEW_MAX_ANG:
 		h, w = gray.shape
 		M = cv2.getRotationMatrix2D((w / 2.0, h / 2.0), angle, 1.0)
@@ -98,52 +96,41 @@ def _smart_deskew(gray):
 			gray, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
 		)
 	else:
-		log.debug("Skipping deskew: angle %.1f° outside ±%.1f°", angle, DESKEW_MAX_ANG)
+		log.debug("skip deskew: %.1f° outside ±%.1f°", angle, DESKEW_MAX_ANG)
 		return gray
 
 
-def extract_text(image_bytes):
+def extract_text(image_bytes: bytes) -> str:
 	t0 = time.perf_counter()
 
-	# 1. Load original
 	pil_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
 	bgr = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
-	_debug_save(bgr, "1_Original")
+	_debug_save(bgr, "1_original")
 
-	# 2. Perspective warp
 	small_gray = cv2.cvtColor(
 		cv2.resize(bgr, (0, 0), fx=0.5, fy=0.5), cv2.COLOR_BGR2GRAY
 	)
 	quad = _detect_receipt_contour(small_gray)
 	warped = _four_point_transform(bgr, quad * 2) if quad is not None else bgr.copy()
-	_debug_save(warped, "2_Warped")
+	_debug_save(warped, "2_warped")
 
-	# 3. Resize long edge
 	h, w = warped.shape[:2]
 	if max(h, w) > MAX_EDGE:
 		scale = MAX_EDGE / max(h, w)
 		warped = cv2.resize(
 			warped, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA
 		)
-	_debug_save(warped, "3_Resized")
+	_debug_save(warped, "3_resized")
 
-	# 4. Grayscale + CLAHE
 	gray = cv2.cvtColor(warped, cv2.COLOR_BGR2GRAY)
 	clahe = cv2.createCLAHE(clipLimit=CLAHE_CLIP, tileGridSize=(8, 8))
 	gray = clahe.apply(gray)
-	_debug_save(gray, "4_CLAHE")
+	_debug_save(gray, "4_clahe")
 
-	# 5. Smart deskew
 	gray = _smart_deskew(gray)
-	_debug_save(gray, "5_Deskew")
+	_debug_save(gray, "5_deskew")
 
-	# 6. OCR
 	text = pytesseract.image_to_string(gray, lang="eng", config=TESS_CONFIG).strip()
 
-	log.info(
-		"OCR pipeline time: %.2f s | Extracted %d chars",
-		time.perf_counter() - t0,
-		len(text),
-	)
-	log.info("Extracted text:\n%s", text)
+	log.info("ocr time: %.2fs | %d chars", time.perf_counter() - t0, len(text))
 	return text

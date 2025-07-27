@@ -1,97 +1,123 @@
-import logging
+from __future__ import annotations
+
 import json
+import logging
+import shutil
+from pathlib import Path
+from typing import Any
 
-from llama_cpp import Llama
+from opentelemetry import trace
 
-from ...config import ensure_model_present, LOCAL_PROVIDER_ENABLED
-from ...config import (
-	LOCAL_MODEL_FILE,
-	LLAMA_THREADS,
-	LLAMA_CTX,
-	LLAMA_MAX_TOK,
-	LLAMA_TEMP,
-	LLAMA_TOP_P,
-	LLAMA_TOP_K,
-)
-from ...schema import Receipt
-# The ocr import is no longer here at the top level
+from ...schemas import Receipt
+from ...config import SERVICE_NAME
 
 log = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
+
+# defaults chosen for convenience; if download fails, provider will be unavailable
+HF_REPO_ID = "microsoft/Phi-3-mini-4k-instruct-gguf"
+HF_FILENAME = "Phi-3-mini-4k-instruct-q4.gguf"
+MODELS_DIR = Path("models")
+LOCAL_MODEL_FILE = MODELS_DIR / HF_FILENAME
 
 
-def init_provider():
-	"""
-	Initialization is deferred to the first call to parse_receipt
-	to avoid downloading the model on startup.
-	"""
-	if LOCAL_PROVIDER_ENABLED:
-		log.info("Local provider is enabled.")
-	else:
-		log.info(
-			"Local provider is disabled. Set LOCAL_PROVIDER_ENABLED=true to use it."
-		)
-	pass
+class LocalProvider:
+	name = "local"
+	kind = "local"
 
+	def __init__(self) -> None:
+		self._ready_checked = False
+		self._reason: str | None = None
 
-def parse_receipt(image_bytes):
-	"""
-	Parses a receipt using the local provider.
-	Ensures model is downloaded on first run.
-	"""
-	# Check if the local provider is enabled before proceeding
-	if not LOCAL_PROVIDER_ENABLED:
-		raise RuntimeError(
-			"The local provider is not enabled. Set LOCAL_PROVIDER_ENABLED=true to use it."
-		)
+	def model_id(self) -> str | None:
+		return HF_FILENAME if LOCAL_MODEL_FILE.exists() else None
 
-	# Defer the import of the heavy OCR module to here
-	from .ocr import extract_text
+	def _check_ready(self) -> tuple[bool, str | None]:
+		# lightweight capability check; no downloads, no heavy imports
+		if shutil.which("tesseract") is None:
+			return False, "tesseract not found on PATH"
 
-	# 1. Ensure model is present (triggers download on first call)
-	ensure_model_present()
-
-	# 2. Extract text from the image
-	ocr_txt = extract_text(image_bytes)
-
-	# 3. Lazily load LLM into memory and run inference
-	if not hasattr(parse_receipt, "_llm"):
-		log.info("Loading local LLM into memory for the first time...")
 		try:
-			parse_receipt._llm = Llama(
-				model_path=str(LOCAL_MODEL_FILE),
-				n_threads=LLAMA_THREADS,
-				n_ctx=LLAMA_CTX,
-				chat_format="llama-2",
-				verbose=False,  # Add this line to suppress backend logging
-			)
-			log.info("Local LLM loaded successfully.")
+			import pytesseract  # noqa:F401
+			import numpy  # noqa:F401
+			import PIL  # noqa:F401
+			import cv2  # noqa:F401
+			import llama_cpp  # noqa:F401
+			import huggingface_hub  # noqa:F401
 		except Exception as e:
-			log.error(f"Failed to load local LLM model: {e}")
-			raise RuntimeError(
-				f"Could not load local model from {LOCAL_MODEL_FILE}"
-			) from e
+			return False, f"missing local extras: {e}"
 
-	user_prompt = (
-		"Extract JSON with keys merchant, date, total (number), "
-		"items (array of {name, price, qty}) from the receipt below.\n\n"
-		f"### OCR TEXT\n{ocr_txt}\n### END"
-	)
+		return True, None
 
-	res = parse_receipt._llm.create_chat_completion(
-		messages=[{"role": "user", "content": user_prompt}],
-		max_tokens=LLAMA_MAX_TOK,
-		temperature=LLAMA_TEMP,
-		top_p=LLAMA_TOP_P,
-		top_k=LLAMA_TOP_K,
-		response_format={"type": "json_object"},
-	)
+	def available(self) -> tuple[bool, str | None]:
+		if not self._ready_checked:
+			ok, reason = self._check_ready()
+			self._ready_checked, self._reason = True, reason
+			return ok, reason
+		return (self._reason is None), self._reason
 
-	raw = res["choices"][0]["message"]["content"].strip()
-	data = json.loads(raw)
+	def _ensure_model_present(self) -> None:
+		if LOCAL_MODEL_FILE.exists():
+			return
+		MODELS_DIR.mkdir(parents=True, exist_ok=True)
+		from huggingface_hub import snapshot_download
 
-	# clean up empty items (stamps, points, etc)
-	if "items" in data and isinstance(data["items"], list):
-		data["items"] = [item for item in data["items"] if item.get("price") != 0]
+		log.info(
+			"downloading %s from %s",
+			HF_FILENAME,
+			HF_REPO_ID,
+			extra={"service": SERVICE_NAME},
+		)
+		snapshot_download(
+			repo_id=HF_REPO_ID,
+			repo_type="model",
+			local_dir=str(MODELS_DIR),
+			local_dir_use_symlinks=False,
+			allow_patterns=[HF_FILENAME],
+			resume_download=True,
+		)
+		if not LOCAL_MODEL_FILE.exists():
+			raise FileNotFoundError(f"{LOCAL_MODEL_FILE!r} missing after download")
 
-	Receipt(**data)
-	return data
+	def parse(self, image_bytes: bytes, mime_type: str | None) -> Receipt:
+		ok, reason = self.available()
+		if not ok:
+			raise RuntimeError(f"Local provider unavailable: {reason or 'unknown'}")
+
+		from .ocr import extract_text
+		from llama_cpp import Llama
+
+		self._ensure_model_present()
+
+		with tracer.start_as_current_span("provider.local.ocr") as span:
+			txt = extract_text(image_bytes)
+			span.set_attribute("ocr.chars", len(txt))
+
+		if not hasattr(self, "_llm"):
+			log.info("loading local gguf model into memory")
+			self._llm = Llama(
+				model_path=str(LOCAL_MODEL_FILE), n_ctx=4096, verbose=False
+			)
+
+		user_prompt = (
+			"Extract JSON with keys merchant (string, optional), "
+			"date (YYYY-MM-DD, optional), total (number, required) "
+			"and items (array of {name, price, qty}, required) from the receipt below.\n"
+			"Return only valid JSON.\n\n"
+			f"### OCR TEXT\n{txt}\n### END"
+		)
+
+		with tracer.start_as_current_span("provider.local.llm") as span:
+			res = self._llm.create_chat_completion(
+				messages=[{"role": "user", "content": user_prompt}],
+				temperature=0.1,
+				response_format={"type": "json_object"},
+				max_tokens=512,
+			)
+			raw = res["choices"][0]["message"]["content"].strip()
+			span.set_attribute("llm.output_chars", len(raw))
+
+		data: dict[str, Any] = json.loads(raw)
+		rec = Receipt(**data)
+		rec.items = [i for i in rec.items if i.price not in (0, 0.0)]
+		return rec
