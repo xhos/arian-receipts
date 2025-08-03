@@ -13,7 +13,6 @@ lint:
   ignore_only:
     ENUM_VALUE_PREFIX:
       - arian/v1/enums.proto
-
     RPC_RESPONSE_STANDARD_NAME:
       - arian/v1/user_services.proto
       - arian/v1/account_services.proto
