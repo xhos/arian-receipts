@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package ariand.v1;
+
+option go_package = "ariand/gen/go/ariand/v1;ariandv1";
+
+// Account types
+enum AccountType {
+  ACCOUNT_UNSPECIFIED = 0;
+  ACCOUNT_CHEQUING = 1;
+  ACCOUNT_SAVINGS = 2;
+  ACCOUNT_CREDIT_CARD = 3;
+  ACCOUNT_INVESTMENT = 4;
+  ACCOUNT_OTHER = 5;
+}
+
+// Transaction flow direction
+enum TransactionDirection {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_INCOMING = 1;
+  DIRECTION_OUTGOING = 2;
+}
+
+// How a transaction was categorized
+enum CategorizationStatus {
+  CATEGORIZATION_UNSPECIFIED = 0;
+  CATEGORIZATION_NONE = 1;
+  CATEGORIZATION_AUTO = 2;
+  CATEGORIZATION_MANUAL = 3;
+  CATEGORIZATION_VERIFIED = 4;
+}
+
+// Receipt parsing engine
+enum ReceiptEngine {
+  ENGINE_UNSPECIFIED = 0;
+  ENGINE_GEMINI = 1;
+  ENGINE_LOCAL = 2;
+}
+
+// Receipt parsing status
+enum ReceiptParseStatus {
+  PARSE_STATUS_UNSPECIFIED = 0;
+  PARSE_STATUS_PENDING = 1;
+  PARSE_STATUS_SUCCESS = 2;
+  PARSE_STATUS_FAILED = 3;
+}
+
+// Receipt linking status
+enum ReceiptLinkStatus {
+  LINK_STATUS_UNSPECIFIED = 0;
+  LINK_STATUS_UNLINKED = 1;
+  LINK_STATUS_MATCHED = 2;
+  LINK_STATUS_NEEDS_VERIFICATION = 3;
+}

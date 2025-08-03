@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package ariand.v1;
+
+import "google/type/date.proto";
+import "google/type/money.proto";
+
+option go_package = "ariand/gen/go/ariand/v1;ariandv1";
+
+// Daily trend data point
+message TrendPoint {
+  google.type.Date date = 1; // YYYY-MM-DD
+  google.type.Money income = 2;
+  google.type.Money expenses = 3;
+}
+
+// Monthly comparison data
+message MonthlyComparison {
+  string month = 1; // YYYY-MM
+  google.type.Money income = 2;
+  google.type.Money expenses = 3;
+  google.type.Money net = 4;
+}
+
+// Dashboard summary statistics
+message DashboardSummary {
+  int64 total_accounts = 1;
+  int64 total_transactions = 2;
+  google.type.Money total_income = 3;
+  google.type.Money total_expenses = 4;
+  int64 transactions_last_30_days = 5;
+  int64 uncategorized_transactions = 6;
+}
+
+// Top spending category
+message TopCategory {
+  string slug = 1;
+  string label = 2;
+  string color = 3;
+  int64 transaction_count = 4;
+  google.type.Money total_amount = 5;
+}
+
+// Top merchant by spending
+message TopMerchant {
+  string merchant = 1;
+  int64 transaction_count = 2;
+  google.type.Money total_amount = 3;
+  google.type.Money avg_amount = 4;
+}
+

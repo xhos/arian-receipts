@@ -1,0 +1,35 @@
+version: v2
+
+deps:
+  - buf.build/googleapis/googleapis
+
+modules:
+  - path: arian
+    name: buf.build/xhos/arian-protos
+
+lint:
+  use:
+    - STANDARD
+  ignore_only:
+    ENUM_VALUE_PREFIX:
+      - arian/v1/enums.proto
+
+    RPC_RESPONSE_STANDARD_NAME:
+      - arian/v1/user_services.proto
+      - arian/v1/account_services.proto
+      - arian/v1/transaction_services.proto
+      - arian/v1/category_services.proto
+      - arian/v1/dashboard_services.proto
+      - arian/v1/receipt_services.proto
+
+    RPC_REQUEST_RESPONSE_UNIQUE:
+      - arian/v1/user_services.proto
+      - arian/v1/account_services.proto
+      - arian/v1/transaction_services.proto
+      - arian/v1/category_services.proto
+      - arian/v1/dashboard_services.proto
+      - arian/v1/receipt_services.proto
+
+breaking:
+  use:
+    - FILE
