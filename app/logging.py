@@ -36,6 +36,7 @@ class LokiJSONFormatter(jsonlogger.JsonFormatter):
 
 		return log_record
 
+
 def configure_logging(
 	service: str, json_mode: bool, level: str = "INFO"
 ) -> logging.Logger:

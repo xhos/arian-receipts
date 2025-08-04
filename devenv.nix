@@ -1,8 +1,8 @@
 {pkgs, ...}: {
   packages = with pkgs; [
+    grpcurl
+    buf
     ruff
-    cmake
-    tesseract
   ];
 
   languages.python = {
@@ -19,10 +19,17 @@
   };
 
   scripts.run.exec = ''
-    uvicorn app.main:app --reload
+    arian-receipts
   '';
 
-  git-hooks.hooks.ruff.enable = true;
+  scripts.bump-proto.exec = ''
+    git -C proto fetch origin
+    git -C proto checkout main
+    git -C proto pull --ff-only
+    git add proto
+    git commit -m "⬆️ bump proto files"
+    git push
+  '';
 
   dotenv.enable = true;
 

@@ -1,91 +1,97 @@
 # arian‑receipts
 
-a microservice designed for use inside the arian ecosystem, but repurposable. it provides a simple api to parse receipts using google gemini or a local pipeline (poc).
-
-## api reference
-
-### POST /v1/providers/{provider}/parse
-
-Parses a receipt image and returns structured data.
-
-#### request
-
-- content‑type: multipart/form‑data  
-- body: `file` – image of receipt (jpeg|png, ≤10 MB)
+a microservice designed for use inside the arian ecosystem, but repurposable. it provides a simple grpc api to parse receipts using google gemini or a local pipeline (poc).
 
 ```shell
-curl -sS \
-  -F "file=@image.jpg;type=image/jpeg" \
-  http://localhost:8000/v1/providers/gemini/parse | jq .
+export GOOGLE_API_KEY="your-api-key-here"
+uv run arian-receipts
+# INFO app.app — starting gRPC server
+# INFO app.app — gRPC server ready
 ```
 
-#### response
+## grpc api reference
+
+### `arian.v1.ReceiptParsingService/ParseImage`
+
+parses a receipt image and returns structured data.
+
+```shell
+# using grpcurl with base64 encoded image
+grpcurl -plaintext \
+  -d '{
+    "image_data": "'$(base64 -w0 receipt.jpg)'",
+    "content_type": "image/jpeg"
+  }' \
+  localhost:50051 \
+  arian.v1.ReceiptParsingService/ParseImage
+```
+
+response example:
 
 ```json
 {
-  "total": 99.99,
-  "items": [
-    {"name":"PRODUCT NAME","price":19.99,"qty":1}
-  ],
-  "merchant": "STORE NAME",
-  "date": "YYYY-MM-DD"
+  "receipt": {
+    "merchant": "NOFRILLS",
+    "total_amount": {
+      "currency_code": "USD",
+      "units": "18",
+      "nanos": 870000000
+    },
+    "items": [
+      {
+        "name": "PC CHO COOKIE",
+        "quantity": 1,
+        "unit_price": {
+          "currency_code": "USD",
+          "units": "4",
+          "nanos": 790000000
+        }
+      }
+    ]
+  }
 }
 ```
 
-### GET /v1/providers
+### `arian.v1.ReceiptParsingService/GetStatus`
 
-returns state of each provider (model, availability)
-
-```shell
-curl -s http://localhost:8000/v1/providers | jq .
-```
-
-example:
-
-```json
-[
-  {
-    "name":"gemini",
-    "kind":"remote",
-    "available":true,
-    "reason":null,
-    "model":"gemini-2.0-flash-001"
-  },
-  {
-    "name":"local",
-    "kind":"local",
-    "available":false,
-    "reason":"missing local extras: No module named 'pytesseract'",
-    "model":null
-  }
-]
-```
-
-### GET /v1/health
-
-returns basic health status
+returns provider availability (also serves as health check).
 
 ```shell
-curl -s http://localhost:8000/v1/health | jq .
+grpcurl -plaintext -d '{}' localhost:50051 arian.v1.ReceiptParsingService/GetStatus
 ```
 
-#### response
+response example:
 
 ```json
-{"status":"ok"}
+{
+  "providers": [
+    {
+      "name": "gemini",
+      "kind": "remote", 
+      "available": true,
+      "model": "gemini-2.0-flash-001"
+    },
+    {
+      "name": "local",
+      "kind": "local",
+      "available": false,
+      "reason": "tesseract not found on PATH"
+    }
+  ],
+  "service_version": "0.3.0"
+}
 ```
 
-```shell
-curl -s http://localhost:8000/v1/health | jq .
-```
+## configuration
 
-#### response
+| variable        | default  | description                           |
+|-----------------|----------|---------------------------------------|
+| `GOOGLE_API_KEY`| required | google ai api key for gemini          |
+| `GRPC_PORT`     | `50051`  | grpc server port                      |
+| `MAX_UPLOAD_MB` | `10`     | maximum file size                     |
+| `LOG_LEVEL`     | `INFO`   | logging level                         |
 
-```json
-{"status":"ok"}
-```
-
-## note
+## providers
 
 there are 2 existing providers (easily extended):
 

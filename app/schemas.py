@@ -16,10 +16,8 @@ class Item(BaseModel):
 
 
 class Receipt(BaseModel):
-	# required
 	total: float
 	items: list[Item] = Field(default_factory=list)
-	# optional
 	merchant: Optional[str] = None
 	date: Optional[ISODateStr] = None
 
@@ -30,13 +28,3 @@ class ProviderState(BaseModel):
 	available: bool
 	reason: Optional[str] = None
 	model: Optional[str] = None
-
-
-class ErrorBody(BaseModel):
-	code: str
-	message: str
-	details: dict = Field(default_factory=dict)
-
-
-class ErrorResponse(BaseModel):
-	error: ErrorBody
