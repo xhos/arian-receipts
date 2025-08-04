@@ -12,6 +12,8 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from arian.v1 import receipts_pb2 as arian_dot_v1_dot_receipts__pb2
+from arian.v1 import enums_pb2 as arian_dot_v1_dot_enums__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1e\x61rian/v1/receipt_parsing.proto\x12\x08\x61rian.v1\x1a\x17\x61rian/v1/receipts.proto\x1a\x14\x61rian/v1/enums.proto\"\x96\x01\n\x11ParseImageRequest\x12\x1d\n\nimage_data\x18\x01 \x01(\x0cR\timageData\x12!\n\x0c\x63ontent_type\x18\x02 \x01(\tR\x0b\x63ontentType\x12\x34\n\x06\x65ngine\x18\x03 \x01(\x0e\x32\x17.arian.v1.ReceiptEngineH\x00R\x06\x65ngine\x88\x01\x01\x42\t\n\x07_engine\"A\n\x12ParseImageResponse\x12+\n\x07receipt\x18\x01 \x01(\x0b\x32\x11.arian.v1.ReceiptR\x07receipt\"\x12\n\x10GetStatusRequest\"t\n\x11GetStatusResponse\x12\x36\n\tproviders\x18\x01 \x03(\x0b\x32\x18.arian.v1.ProviderStatusR\tproviders\x12\'\n\x0fservice_version\x18\x02 \x01(\tR\x0eserviceVersion\"\xa3\x01\n\x0eProviderStatus\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n\x04kind\x18\x02 \x01(\tR\x04kind\x12\x1c\n\tavailable\x18\x03 \x01(\x08R\tavailable\x12\x1b\n\x06reason\x18\x04 \x01(\tH\x00R\x06reason\x88\x01\x01\x12\x19\n\x05model\x18\x05 \x01(\tH\x01R\x05model\x88\x01\x01\x42\t\n\x07_reasonB\x08\n\x06_model2\xa6\x01\n\x15ReceiptParsingService\x12G\n\nParseImage\x12\x1b.arian.v1.ParseImageRequest\x1a\x1c.arian.v1.ParseImageResponse\x12\x44\n\tGetStatus\x12\x1a.arian.v1.GetStatusRequest\x1a\x1b.arian.v1.GetStatusResponseB!Z\x1f\x61riand/gen/go/arian/v1;ariandv1b\x06proto3')

@@ -12,6 +12,7 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15\x61rian/v1/common.proto\x12\x08\x61rian.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x81\x01\n\x08Location\x12\x1a\n\x08latitude\x18\x01 \x01(\x01R\x08latitude\x12\x1c\n\tlongitude\x18\x02 \x01(\x01R\tlongitude\x12\x16\n\x06source\x18\x03 \x01(\tR\x06source\x12\x19\n\x05label\x18\x04 \x01(\tH\x00R\x05label\x88\x01\x01\x42\x08\n\x06_label\"T\n\x06\x43ursor\x12.\n\x04\x64\x61te\x18\x01 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\x04\x64\x61te\x12\x13\n\x02id\x18\x02 \x01(\x03H\x00R\x02id\x88\x01\x01\x42\x05\n\x03_id\";\n\tTimeOfDay\x12\x14\n\x05hours\x18\x01 \x01(\x05R\x05hours\x12\x18\n\x07minutes\x18\x02 \x01(\x05R\x07minutesB!Z\x1f\x61riand/gen/go/arian/v1;ariandv1b\x06proto3')

@@ -12,6 +12,7 @@ from google.protobuf.internal import builder as _builder
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x13\x61rian/v1/user.proto\x12\x08\x61rian.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xdb\x01\n\x04User\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n\x05\x65mail\x18\x02 \x01(\tR\x05\x65mail\x12&\n\x0c\x64isplay_name\x18\x03 \x01(\tH\x00R\x0b\x64isplayName\x88\x01\x01\x12\x39\n\ncreated_at\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x39\n\nupdated_at\x18\x05 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tupdatedAtB\x0f\n\r_display_name\"\xd7\x01\n\x0eUserCredential\x12\x0e\n\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n\x07user_id\x18\x02 \x01(\tR\x06userId\x12#\n\rcredential_id\x18\x03 \x01(\x0cR\x0c\x63redentialId\x12\x1d\n\npublic_key\x18\x04 \x01(\x0cR\tpublicKey\x12\x1d\n\nsign_count\x18\x05 \x01(\x03R\tsignCount\x12\x39\n\ncreated_at\x18\x06 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tcreatedAtB!Z\x1f\x61riand/gen/go/arian/v1;ariandv1b\x06proto3')
