@@ -13,6 +13,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 from .config import SERVICE_NAME, load_settings
+from .version import get_version_info
 
 # Import proto dependencies in correct order
 from arian.v1 import receipt_parsing_pb2_grpc
@@ -43,7 +44,8 @@ def setup_tracing() -> None:
 
 
 def serve():
-	log.info("starting gRPC server")
+	version_info = get_version_info()
+	log.info("starting gRPC server", extra=version_info)
 	setup_tracing()
 
 	server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
