@@ -38,12 +38,13 @@ wheels = [
 
 [[package]]
 name = "arian-receipts"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "." }
 dependencies = [
     { name = "google-genai" },
     { name = "googleapis-common-protos" },
     { name = "grpcio" },
+    { name = "grpcio-health-checking" },
     { name = "grpcio-reflection" },
     { name = "opentelemetry-api" },
     { name = "opentelemetry-exporter-otlp-proto-grpc" },
@@ -74,6 +75,7 @@ requires-dist = [
     { name = "google-genai", specifier = ">=1.28.0" },
     { name = "googleapis-common-protos", specifier = ">=1.70.0" },
     { name = "grpcio", specifier = ">=1.74.0" },
+    { name = "grpcio-health-checking", specifier = ">=1.74.0" },
     { name = "grpcio-reflection", specifier = ">=1.74.0" },
     { name = "huggingface-hub", marker = "extra == 'local'", specifier = ">=0.24.0" },
     { name = "llama-cpp-python", marker = "extra == 'local'", specifier = ">=0.2.80" },
@@ -277,6 +279,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/84/35/9f6b2503c1fd86d068b46818bbd7329db26a87cdd8c01e0d1a9abea1104c/grpcio-1.74.0-cp313-cp313-musllinux_1_1_x86_64.whl", hash = "sha256:3b03d8f2a07f0fea8c8f74deb59f8352b770e3900d143b3d1475effcb08eec20", size = 6491489, upload_time = "2025-07-24T18:53:55.06Z" },
     { url = "https://files.pythonhosted.org/packages/75/33/a04e99be2a82c4cbc4039eb3a76f6c3632932b9d5d295221389d10ac9ca7/grpcio-1.74.0-cp313-cp313-win32.whl", hash = "sha256:b6a73b2ba83e663b2480a90b82fdae6a7aa6427f62bf43b29912c0cfd1aa2bfa", size = 3805811, upload_time = "2025-07-24T18:53:56.798Z" },
     { url = "https://files.pythonhosted.org/packages/34/80/de3eb55eb581815342d097214bed4c59e806b05f1b3110df03b2280d6dfd/grpcio-1.74.0-cp313-cp313-win_amd64.whl", hash = "sha256:fd3c71aeee838299c5887230b8a1822795325ddfea635edd82954c1eaa831e24", size = 4489214, upload_time = "2025-07-24T18:53:59.771Z" },
+]
+
+[[package]]
+name = "grpcio-health-checking"
+version = "1.74.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "grpcio" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/82/69/87ad1cd826a9f06567bccb66f0c3228a0758ea47a1d35eef15db36b2f492/grpcio_health_checking-1.74.0.tar.gz", hash = "sha256:d6749451d4cef543c3f6260ae9a86c84b9ab02a92421cecae73a632e7fe920bf", size = 16770, upload_time = "2025-07-24T19:02:01.298Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/62/2fd797be7514855a0b28f946f57b9a134bba25a9873c269fa730d8fd49d8/grpcio_health_checking-1.74.0-py3-none-any.whl", hash = "sha256:9a6e7bcdf16395105425753d6e3fe31f57cb6ab3f232282254b50f02cc63d9c7", size = 18921, upload_time = "2025-07-24T19:01:24.856Z" },
 ]
 
 [[package]]

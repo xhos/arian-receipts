@@ -1,9 +1,8 @@
 [project]
 name = "arian-receipts"
-version = "0.3.1"
+version = "0.3.2"
 requires-python = ">=3.11"
 description = "receipt-parser microservice for arian"
-readme = "readme.md"
 authors = [{ name = "xhos" }]
 license = { text = "MIT" }
 
@@ -19,6 +18,7 @@ dependencies = [
   "opentelemetry-exporter-otlp-proto-grpc>=1.36.0",
   "opentelemetry-instrumentation-grpc>=0.57b0",
   "grpcio-reflection>=1.74.0",
+  "grpcio-health-checking>=1.74.0",
 ]
 
 [project.optional-dependencies]

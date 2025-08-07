@@ -5,6 +5,7 @@ from concurrent import futures
 
 import grpc
 from grpc_reflection.v1alpha import reflection
+from grpc_health.v1 import health, health_pb2_grpc
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.grpc import GrpcInstrumentorServer
@@ -56,6 +57,10 @@ def serve():
 		parsing_service, server
 	)
 
+	health_servicer = health.HealthServicer()
+	health_servicer.set('', health_pb2_grpc.health__pb2.HealthCheckResponse.SERVING)
+	health_pb2_grpc.add_HealthServicer_to_server(health_servicer, server)
+
 	# Enable gRPC reflection
 	from arian.v1 import receipt_parsing_pb2
 
@@ -64,7 +69,9 @@ def serve():
 			"ReceiptParsingService"
 		].full_name,
 		reflection.SERVICE_NAME,
+  	health.SERVICE_NAME,
 	)
+ 
 	reflection.enable_server_reflection(SERVICE_NAMES, server)
 
 	listen_addr = f"[::]:{settings.grpc_port}"
