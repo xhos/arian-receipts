@@ -1,53 +1,95 @@
-# ---------- builder ----------
-FROM python:3.13.5-slim-bookworm AS build
+# ----- build ----------
 
-# metadata
-ARG VCS_REF="unknown"
-ARG BUILD_DATE
-LABEL org.opencontainers.image.created=$BUILD_DATE \
-      org.opencontainers.image.revision=$VCS_REF \
-      org.opencontainers.image.source="https://github.com/your-org/arian-receipts"
+FROM python:3.15-slim-bookworm AS builder
 
-# system deps
-RUN --mount=type=cache,target=/var/cache/apt \
-    apt-get update && \
-    apt-get install --no-install-recommends -y build-essential ca-certificates curl && \
-    rm -rf /var/lib/apt/lists/*
+ARG BUILD_TIME
+ARG GIT_COMMIT
+ARG GIT_BRANCH
 
-# uv binary
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-# project deps
-WORKDIR /app
-COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable  
-
-# project code
-COPY . .
-RUN uv pip install --no-deps .           
-
-# gRPC health-probe
-ARG GRPC_HEALTH_PROBE_VERSION=v0.4.39
-RUN curl -fsSL -o /usr/local/bin/grpc_health_probe \
-      https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 \
-    && chmod +x /usr/local/bin/grpc_health_probe
-
-# ---------- runtime ----------
-FROM python:3.13.5-slim-bookworm
-
+# install dependencies
 RUN apt-get update && \
-    apt-get install --no-install-recommends -y ca-certificates && \
+    apt-get install -y --no-install-recommends build-essential ca-certificates curl git && \
     rm -rf /var/lib/apt/lists/* && \
-    addgroup --system --gid 1000 arian && \
-    adduser  --system --uid 1000 --gid 1000 --disabled-password arian
+    curl -LsSf https://astral.sh/uv/install.sh | sh
 
-WORKDIR /app
-COPY --from=build /app/.venv /app/.venv                 
-COPY --from=build /usr/local/bin/grpc_health_probe /usr/local/bin/
+# add uv to PATH
+ENV PATH="/root/.cargo/bin:${PATH}"
 
-ENV PATH="/app/.venv/bin:${PATH}"
+WORKDIR /build
+
+# copy dependencies
+COPY pyproject.toml uv.lock ./
+
+# install dependencies and pre-compile
+RUN uv sync --frozen --no-dev --no-editable && \
+    python -m compileall /build/.venv
+
+# copy source
+COPY arian_receipts/ ./arian_receipts/
+
+# install and compile
+RUN uv pip install --no-deps . && python -m compileall /build/.venv/lib/python*/site-packages/arian_receipts
+
+# download grpc_health_probe
+RUN GRPC_HEALTH_PROBE_VERSION=v0.4.39 && \
+    curl -sL "https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64" \
+    -o /build/grpc_health_probe && \
+    chmod +x /build/grpc_health_probe
+
+# ----- runtime ----------
+FROM python:3.15-slim-bookworm
+
+# metadata labels
+LABEL org.opencontainers.image.title="arian-receipts" \
+      org.opencontainers.image.description="Receipt Image Processing Service" \
+      org.opencontainers.image.vendor="Arian" \
+      org.opencontainers.image.source="https://github.com/xhos/arian-receipts" \
+      org.opencontainers.image.created="${BUILD_TIME}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}"
+
+# install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates libgomp1 libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/* && \
+    # create non-root user
+    groupadd -g 1001 arian && \
+    useradd -u 1001 -g arian -m -d /app -s /bin/false arian && \
+    # create necessary directories
+    mkdir -p /app /tmp/receipts && \
+    chown -R arian:arian /app /tmp/receipts
+
+# copy python environment from builder
+COPY --from=builder --chown=arian:arian /build/.venv /app/.venv
+
+# copy health check tool
+COPY --from=builder --chown=arian:arian /build/grpc_health_probe /usr/local/bin/grpc_health_probe
+
+# set python environment
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONHASHSEED=random \
+    # python optimizations
+    PYTHONOPTIMIZE=1 \
+    # service configuration defaults
+    GRPC_PORT=50052 \
+    LOG_LEVEL=INFO \
+    MAX_UPLOAD_MB=10 \
+    PROVIDER_TIMEOUT_SECS=20 \
+    # temp directory for processing
+    TMPDIR=/tmp/receipts
+
+# switch to non-root user
 USER arian
-EXPOSE 8080
+WORKDIR /app
 
-ENTRYPOINT ["arian-receipts"]
+# expose gRPC port
+EXPOSE 50052
+
+# health check with proper timing
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD ["/usr/local/bin/grpc_health_probe", "-addr=:50052"]
+
+# run the service
+ENTRYPOINT ["python", "-m", "arian_receipts"]
+CMD ["--host", "0.0.0.0", "--port", "50052"]
