@@ -28,8 +28,6 @@ LOKI_URL = _env("LOKI_URL", None, str)  # presence toggles json logs, no direct 
 GEMINI_MODEL = _env("GEMINI_MODEL", "gemini-2.0-flash-001", str).strip()
 PROVIDER_TIMEOUT_SECS = _env("PROVIDER_TIMEOUT_SECS", 20, int)
 
-# grpc config
-GRPC_PORT = _env("GRPC_PORT", 50051, int)
 
 # constraints
 MAX_UPLOAD_MB = _env("MAX_UPLOAD_MB", 10, int)
@@ -42,7 +40,6 @@ class Settings:
 	log_level: str = LOG_LEVEL
 	json_logs: bool = bool(OTLP_ENDPOINT or LOKI_URL)
 	otlp_endpoint: str | None = OTLP_ENDPOINT
-	grpc_port: int = GRPC_PORT
 	gemini_model: str = GEMINI_MODEL
 	provider_timeout_secs: int = PROVIDER_TIMEOUT_SECS
 	max_upload_mb: int = MAX_UPLOAD_MB
