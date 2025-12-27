@@ -1,8 +1,27 @@
 version: v2
+
+managed:
+  enabled: true
+  override:
+    - file_option: go_package_prefix
+      module: buf.build/xhos/arian-protos
+      value: arian-receipts/internal/gen
+
 inputs:
   - directory: proto
+
 plugins:
-  - remote: buf.build/protocolbuffers/python:v25.1
-    out: .
-  - remote: buf.build/grpc/python:v1.60.0
-    out: .
+  - local: protoc-gen-go
+    out: internal/gen
+    opt:
+      - paths=source_relative
+
+  - local: protoc-gen-go-grpc
+    out: internal/gen
+    opt:
+      - paths=source_relative
+
+  - local: protoc-gen-connect-go
+    out: internal/gen
+    opt:
+      - paths=source_relative

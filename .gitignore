@@ -1,14 +1,9 @@
-# devenv
-.devenv*
-devenv.local.nix
+# dev env
 .direnv
 .pre-commit-config.yaml
 
-# python stuff
-__pycache__
-.uv-cache
-
 # other 
-data
+data/
 .env
-*.jpg
+models/
+old/
