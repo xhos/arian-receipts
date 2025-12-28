@@ -1,0 +1,34 @@
+services:
+  ocr:
+    build: .
+    ports:
+      - "55556:55556"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      model-pull:
+        condition: service_completed_successfully
+
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  model-pull:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    depends_on:
+      ollama:
+        condition: service_healthy
+    command: pull qwen2.5vl:3b
+
+volumes:
+  ollama:
