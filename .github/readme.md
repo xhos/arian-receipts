@@ -43,3 +43,16 @@ to regenerate proto code:
 ```bash
 regen
 ```
+
+## 🌱 ecosystem
+
+```definition
+arian (n.) /ˈarjan/ [Welsh] Silver; money; wealth.  
+```
+
+- [ariand](https://github.com/xhos/ariand) - main backend service
+- [arian-web](https://github.com/xhos/arian-web) - frontend web application
+- [arian-mobile](https://github.com/xhos/arian-mobile) - mobile appplication
+- [arian-protos](https://github.com/xhos/arian-protos) - shared protobuf definitions
+- [arian-email-parser](https://github.com/xhos/arian-email-parser) - email parsing service
+- [arian-statement-parser](https://github.com/xhos/arian-statement-parser) - bank statement parsing cli tool
