@@ -7,14 +7,19 @@ import (
 	"math"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/charmbracelet/log"
 	"github.com/ollama/ollama/api"
 
 	pb "arian-receipts/internal/gen/arian/v1"
 )
 
-// prompt is hardcoded to prevent injection attacks from image content.
-// the model sees only this prompt + the image bytes.
+const (
+	maxImageSize = 5 << 20         // 5MB
+	timeout      = 5 * time.Minute // it can take a while
+)
+
 const prompt = `Look at this receipt image and extract all information as JSON.
 
 Return ONLY valid JSON in this exact format (no markdown, no backticks, no explanation):
@@ -44,29 +49,59 @@ type Server struct {
 	pb.UnimplementedReceiptOCRServiceServer
 	client *api.Client
 	model  string
+	log    *log.Logger
 }
 
-func New(client *api.Client, model string) *Server {
-	return &Server{client: client, model: model}
+func New(client *api.Client, model string, logger *log.Logger) *Server {
+	return &Server{client: client, model: model, log: logger}
 }
 
 func (s *Server) ParseReceipt(ctx context.Context, req *pb.ParseReceiptRequest) (*pb.ParseReceiptResponse, error) {
+	imageSize := len(req.ImageData)
+
+	if imageSize == 0 {
+		return errorResponse(pb.OCRErrorCode_OCR_ERROR_INVALID_IMAGE, "empty image"), nil
+	}
+	if imageSize > maxImageSize {
+		return errorResponse(pb.OCRErrorCode_OCR_ERROR_INVALID_IMAGE, "image exceeds 5MB limit"), nil
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	raw, err := s.callOllama(ctx, req.ImageData)
 	if err != nil {
+		s.log.Error("ollama call failed", "err", err)
+		if ctx.Err() == context.DeadlineExceeded {
+			return errorResponse(pb.OCRErrorCode_OCR_ERROR_TIMEOUT, "inference timeout"), nil
+		}
 		return errorResponse(pb.OCRErrorCode_OCR_ERROR_MODEL_ERROR, err.Error()), nil
 	}
 
 	receipt, err := parseResponse(raw)
 	if err != nil {
+		s.log.Warn("parse failed", "err", err)
 		return errorResponse(pb.OCRErrorCode_OCR_ERROR_PARSE_FAILED, err.Error()), nil
 	}
 
 	receipt.Confidence = calcConfidence(receipt)
 
+	s.log.Info("parsed receipt", "items", len(receipt.Items))
+
 	return &pb.ParseReceiptResponse{Success: true, Data: receipt}, nil
 }
 
 func (s *Server) Health(ctx context.Context, _ *pb.HealthRequest) (*pb.HealthResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// verify ollama is reachable by listing models
+	_, err := s.client.List(ctx)
+	if err != nil {
+		s.log.Warn("ollama health check failed", "err", err)
+		return &pb.HealthResponse{Status: "unhealthy", Model: s.model}, nil
+	}
+
 	return &pb.HealthResponse{Status: "ok", Model: s.model}, nil
 }
 
@@ -206,4 +241,11 @@ func errorResponse(code pb.OCRErrorCode, msg string) *pb.ParseReceiptResponse {
 		Success: false,
 		Error:   &pb.OCRError{Code: code, Message: msg},
 	}
+}
+
+func ptrOr[T any](p *T, fallback T) T {
+	if p != nil {
+		return *p
+	}
+	return fallback
 }
